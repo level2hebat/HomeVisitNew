@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistem Kunjungan Rumah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        .bounce-in { animation: bounceIn 0.6s ease-out; }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        .notification { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            z-index: 1000; 
+            transform: translateX(400px); 
+            transition: transform 0.3s ease; 
+        }
+        .notification.show { transform: translateX(0); }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen">
+    
+    <!-- Notification Toast -->
+    <div id="notification" class="notification bg-white rounded-lg shadow-lg p-4 max-w-sm">
+        <div class="flex items-center">
+            <div id="notificationIcon" class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                <!-- Icon will be inserted here -->
+            </div>
+            <div>
+                <p id="notificationTitle" class="font-medium text-gray-900"></p>
+                <p id="notificationMessage" class="text-sm text-gray-600"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-md fade-in card-hover">
+            <div class="text-center mb-8">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bounce-in">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Sistem Home Visit</h1>
+                <p class="text-gray-600 mt-2">Level 2 Hebat🏆</p>
+                <div class="w-20 h-1 bg-gradient-to-r from-blue-600 to-indigo-600 mx-auto mt-4 rounded-full"></div>
+                <div class="mt-4 flex items-center justify-center">
+                    <div id="connectionStatus" class="flex items-center text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                        <span class="text-green-600">Terhubung ke Supabase</span>
+                    </div>
+                </div>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Nama </label>
+                    <div class="relative">
+                        <select id="teacherSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white">
+                            <option value="">--  Wali Kelas --</option>
+                            <option value="Dewi Kartika Sari, S.Si">Dewi Kartika Sari, S.Si</option>
+                            <option value="Asih Murniati, S.Pd">Asih Murniati, S.Pd</option>
+                            <option value="Septi Merliani, S.Pd">Septi Merliani, S.Pd</option>
+                            <option value="Asa Dayah Febriani, S.Si">Asa Dayah Febriani, S.Si</option>
+                            <option value="Ningsih Yunani, S.Pd">Ningsih Yunani, S.Pd</option>
+                            <option value="Uni Nur Cahyowati, S.Si">Uni Nur Cahyowati, S.Si</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="passwordInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12" placeholder="Masukkan password">
+                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600">
+                            <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105">
+                    <span class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                        Masuk ke Sistem
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let supabase = null;
+
+        // Teacher passwords
+        const teacherPasswords = {
+            'Dewi Kartika Sari, S.Si': 'dewi123',
+            'Asih Murniati, S.Pd': 'asih123',
+            'Septi Merliani, S.Pd': 'septi123',
+            'Asa Dayah Febriani, S.Si': 'asa123',
+            'Ningsih Yunani, S.Pd': 'ningsih123',
+            'Uni Nur Cahyowati, S.Si': 'uni123'
+        };
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSupabase();
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        });
+
+        // Supabase initialization
+        function initializeSupabase() {
+            const supabaseUrl = 'https://zywlolvaejlrfimxrjvi.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp5d2xvbHZhZWpscmZpbXhyanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwOTUxNzIsImV4cCI6MjA3MTY3MTE3Mn0.Go7Vf8yD35aN_xFKMN3tS9NlgBAkFXCoS-bmVX7n_pk';
+            
+            try {
+                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                console.log('Supabase initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Supabase:', error);
+                updateConnectionStatus('offline', 'Mode Offline');
+            }
+        }
+
+        function updateConnectionStatus(status, message) {
+            const statusElement = document.getElementById('connectionStatus');
+            
+            if (status === 'online') {
+                statusElement.innerHTML = `
+                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                    <span class="text-green-600">${message}</span>
+                `;
+            } else {
+                statusElement.innerHTML = `
+                    <div class="w-2 h-2 bg-orange-400 rounded-full mr-2"></div>
+                    <span class="text-orange-600">${message}</span>
+                `;
+            }
+        }
+
+        // Login functionality
+        async function handleLogin(e) {
+            e.preventDefault();
+            const selectedTeacher = document.getElementById('teacherSelect').value;
+            const enteredPassword = document.getElementById('passwordInput').value;
+            
+            if (!selectedTeacher) {
+                showNotification('error', 'Login Gagal', 'Silakan pilih nama guru terlebih dahulu');
+                return;
+            }
+            
+            if (!enteredPassword) {
+                showNotification('error', 'Login Gagal', 'Silakan masukkan password');
+                return;
+            }
+            
+            if (teacherPasswords[selectedTeacher] === enteredPassword) {
+                // Save login info to localStorage
+                localStorage.setItem('currentUser', selectedTeacher);
+                localStorage.setItem('loginTime', new Date().toISOString());
+                
+                showNotification('success', 'Login Berhasil', `Selamat datang, ${selectedTeacher.split(',')[0]}`);
+                
+                // Redirect to form page after short delay
+                setTimeout(() => {
+                    window.location.href = 'form.html';
+                }, 1000);
+            } else {
+                showNotification('error', 'Login Gagal', 'Password salah. Silakan coba lagi.');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        function showNotification(type, title, message) {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const titleEl = document.getElementById('notificationTitle');
+            const messageEl = document.getElementById('notificationMessage');
+            
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            if (type === 'success') {
+                icon.className = 'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-green-100';
+                icon.innerHTML = '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            } else if (type === 'error') {
+                icon.className = 'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-red-100';
+                icon.innerHTML = '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                `;
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                `;
+            }
+        }
+
+        // Check if user is already logged in
+        window.addEventListener('load', function() {
+            const currentUser = localStorage.getItem('currentUser');
+            const loginTime = localStorage.getItem('loginTime');
+            
+            if (currentUser && loginTime) {
+                // Check if login is still valid (24 hours)
+                const loginDate = new Date(loginTime);
+                const now = new Date();
+                const hoursDiff = (now - loginDate) / (1000 * 60 * 60);
+                
+                if (hoursDiff < 24) {
+                    // Still logged in, redirect to form
+                    window.location.href = 'form.html';
+                } else {
+                    // Login expired, clear storage
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('loginTime');
+                }
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'974941dbc13ef88c',t:'MTc1NjEwNTY5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
